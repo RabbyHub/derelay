@@ -1,0 +1,2 @@
+redis_config:
+  server_addr: "redis:6379"

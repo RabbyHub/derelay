@@ -1,0 +1,82 @@
+name: Release
+
+on:
+  release:
+    types:
+      - created
+
+  workflow_dispatch:
+
+env:
+  BUILT_BINARY_PATH: ./
+  BUILT_BINARY_NAME: derelay
+  ARCHIVE_FILE_NAME: derelay-latest-linux-amd64
+
+jobs:
+  make-artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.19.x
+ 
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: tibdex/github-app-token@v1
+        id: generate-token
+        with:
+          app_id: ${{ secrets.RELEASE_APP_ID }}
+          private_key: ${{ secrets.RELEASE_APP_SECRECT }}
+          
+      - name: Make binaries
+        run: |
+          go build
+      
+      - name: Set env
+        run: |
+          echo "REVISION=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          echo "ARCHIVE_FILE_NAME=derelay-$(git rev-parse --short HEAD)-linux-amd64" >> $GITHUB_ENV
+
+      - name: Archive artifacts
+        run: |
+          mkdir $ARCHIVE_FILE_NAME
+          cp $BUILT_BINARY_PATH/$BUILT_BINARY_NAME $ARCHIVE_FILE_NAME/$BUILT_BINARY_NAME
+          sha256sum $ARCHIVE_FILE_NAME/$BUILT_BINARY_NAME --tag >> $ARCHIVE_FILE_NAME/sha256.checksum
+          chmod u+x $ARCHIVE_FILE_NAME/$BUILT_BINARY_NAME
+          tar cvfz $ARCHIVE_FILE_NAME.tar.gz $ARCHIVE_FILE_NAME
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: derelay-artifact
+          path: $ARCHIVE_FILE_NAME.tar.gz
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.3
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+
+      - name: Upload Linux release binary
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path:  ${{ env.BUILT_BINARY_PATH }}/${{ env.BUILT_BINARY_NAME }}
+          asset_name: derelay-linux
+          asset_content_type: application/octet-stream
+
+      - name: Upload Linux release binary tarbal
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ${{ env.ARCHIVE_FILE_NAME }}.tar.gz
+          asset_name: ${{ env.ARCHIVE_FILE_NAME }}.tar.gz
+          asset_content_type: application/gzip

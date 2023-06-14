@@ -1,0 +1,27 @@
+version: "3"
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    entrypoint: [ "/derelay" ]
+    command:
+      - "--config"
+      - "/config/config.yaml"
+    volumes:
+      - ./example/example-config.yaml:/config/config.yaml
+    networks:
+      - derelay
+    depends_on:
+      - redis
+    ports:
+      - "8080:8080"
+    restart: always
+  redis:
+    image: redis:latest
+    networks:
+      - derelay
+
+networks:
+  derelay:
+    driver: bridge
