@@ -36,7 +36,7 @@ jobs:
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
-            type=raw
+            type=raw,value=${{ github.sha }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
