@@ -5,9 +5,19 @@ Derelay is a high performance Relay server implementation described in the [Wall
 
 This README file will guide you through the process of compiling and installing the software from the source code.
 
-## Run through Docker
+## Running the relay server
 
-We've provided an out-of-box `docker-compose.yaml` file for you, you could just run
+### Pull the image from docker hub
+
+Running derelay can be as simple as:
+
+```
+docker run -p 8080:8080 rabbyhub/derelay:latest
+```
+
+### Run through docker-compose
+
+We also provided an out-of-box `docker-compose.yaml` file for you, you could just run
 
 ```
 docker-compose -f docker-compsoe.yaml up
@@ -15,7 +25,7 @@ docker-compose -f docker-compsoe.yaml up
 
 to have your relay server running up.
 
-## Building the source
+### Building the source
 
 Building requires both a Go (version 1.19 or later), you can install them using your favourite package manager. Once the dependencies are installed, run
 
@@ -23,11 +33,11 @@ Building requires both a Go (version 1.19 or later), you can install them using 
 go build
 ```
 
-## Redis
+#### Redis
 
 You have to setup a redis server along side the relay server to have it run properly, redis is being used both to gain an unlimited horizontal scalability and to work as a cache for the pending messages.
 
-## Running relay server
+#### Running relay server
 
 As mentioned above, you need to specify the redis server during running the relay server, besides that you can also specify a listening port for the relay server or leave it empty to have it listen on 8080.
 
