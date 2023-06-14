@@ -33,6 +33,10 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=sha
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
