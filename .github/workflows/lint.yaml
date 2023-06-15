@@ -18,8 +18,8 @@ jobs:
       - uses: tibdex/github-app-token@v1
         id: generate-token
         with:
-          app_id: ${{ secrets.RELEASE_MANAGER_APP_ID }}
-          private_key: ${{ secrets.RELEASE_MANAGER_APP_SECRET }}
+          app_id: ${{ secrets.RELEASE_APP_ID }}
+          private_key: ${{ secrets.RELEASE_APP_SECRECT }}
 
       - name: Checkout code
         uses: actions/checkout@v2
