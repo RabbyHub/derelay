@@ -1,0 +1,33 @@
+name: "Test and Lint"
+
+on:
+  pull_request:
+    branches: [ main ]
+
+  workflow_dispatch:
+
+jobs:
+  gotest-and-golint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.50
+          only-new-issues: true
+          skip-pkg-cache: true
+          skip-build-cache: true
+
+      - name: Go-Test
+        run: |
+          timeout 300s go test --tags unittest ./...

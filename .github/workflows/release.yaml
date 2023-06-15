@@ -31,7 +31,7 @@ jobs:
         with:
           app_id: ${{ secrets.RELEASE_APP_ID }}
           private_key: ${{ secrets.RELEASE_APP_SECRECT }}
-          
+
       - name: Make binaries
         run: |
           go build
@@ -41,7 +41,7 @@ jobs:
           echo "REVISION=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           echo "COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
-          echo "ARCHIVE_FILE_NAME=derelay-$(git rev-parse --short HEAD)-linux-amd64" >> $GITHUB_ENV
+          echo "ARCHIVE_FILE_NAME=derelay-${GITHUB_REF/refs\/tags\//}-linux-amd64" >> $GITHUB_ENV
 
       - name: Archive artifacts
         run: |
@@ -55,6 +55,7 @@ jobs:
         with:
           name: derelay-artifact
           path: $ARCHIVE_FILE_NAME.tar.gz
+
       - name: Get release
         id: get_release
         uses: bruceadams/get-release@v1.2.3
