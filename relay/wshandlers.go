@@ -39,11 +39,11 @@ func (ws *WsServer) pubMessage(message SocketMessage) {
 	if count, _ := ws.redisConn.Publish(context.TODO(), key, message).Result(); count >= 1 {
 		log.Info("message published", zap.Any("client", publisher), zap.Any("topic", topic))
 		if publisher.role == Dapp {
-			publisher.send <- SocketMessage{
+			publisher.send(SocketMessage{
 				Topic: message.Topic,
 				Type:  Ack,
 				Role:  string(Wallet),
-			}
+			})
 		}
 	} else {
 		log.Info("cache message", zap.Any("client", publisher), zap.Any("topic", topic))
@@ -68,7 +68,7 @@ func (ws *WsServer) subMessage(message SocketMessage) {
 	notifications := ws.getCachedMessages(topic, true)
 	log.Info("pending notifications", zap.String("topic", topic), zap.Any("num", len(notifications)), zap.Any("client", subscriber))
 	for _, notification := range notifications {
-		subscriber.send <- notification
+		subscriber.send(notification)
 	}
 
 	// we need do some more work if it's a wallet that subscribes the topic
@@ -121,21 +121,10 @@ func (ws *WsServer) subMessage(message SocketMessage) {
 func (ws *WsServer) handlePingMessage(message SocketMessage) {
 	// response to application layer ping message
 	client := message.client
-	if len(client.send) >= cap(client.send) {
-		// dump the blocked messages
-		bb := []SocketMessage{}
-		for b := range client.send {
-			bb = append(bb, b)
-			if len(client.send) < 10 {
-				break
-			}
-		}
-		log.Warn("client send buffer is full", zap.Any("client", client), zap.Any("messages", bb))
-	}
-	client.send <- SocketMessage{
+	client.send(SocketMessage{
 		Type: Pong,
 		Role: string(Relay),
-	}
+	})
 }
 
 func (ws *WsServer) cacheMessage(message SocketMessage, cacheTime int) {

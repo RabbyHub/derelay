@@ -79,7 +79,7 @@ func (ws *WsServer) NewClientConn(w http.ResponseWriter, r *http.Request) {
 		ws:        ws,
 		pubTopics: NewTopicSet(),
 		subTopics: NewTopicSet(),
-		send:      make(chan SocketMessage, 256),
+		sendbuf:   make(chan SocketMessage, 256),
 		ping:      make(chan struct{}, 8),
 		quit:      make(chan struct{}),
 	}
@@ -139,7 +139,7 @@ func (ws *WsServer) Run() {
 			if !fromDappNotifyChan(chmessage.Channel) {
 				for _, subscriber := range ws.GetSubscriber(message.Topic) {
 					log.Info("forward to subscriber", zap.Any("client", subscriber), zap.Any("message", message))
-					subscriber.send <- message
+					subscriber.send(message)
 				}
 
 				continue
@@ -157,7 +157,7 @@ func (ws *WsServer) Run() {
 				if message.Phase == string(SessionReceived) {
 					publisher.session = message.Topic
 				}
-				publisher.send <- message
+				publisher.send(message)
 			}
 
 		case client := <-ws.register:
@@ -252,12 +252,12 @@ func (ws *WsServer) checkSessionExpiration() {
 
 		metrics.IncExpiredSessions()
 		log.Info("[wsserver] session expired, notify dapp", zap.String("topic", session.topic))
-		session.dapp.send <- SocketMessage{
+		session.dapp.send(SocketMessage{
 			Topic: session.topic,
 			Type:  Pub,
 			Role:  string(Relay),
 			Phase: string(SessionExpired),
-		}
+		})
 
 		ws.pendingSessions.pop()
 	}

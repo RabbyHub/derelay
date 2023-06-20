@@ -3,10 +3,12 @@ package relay
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/RabbyHub/derelay/log"
+	"github.com/RabbyHub/derelay/metrics"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -23,9 +25,9 @@ type client struct {
 	pubTopics TopicSet
 	subTopics TopicSet
 
-	send chan SocketMessage // send buffer
-	ping chan struct{}
-	quit chan struct{}
+	sendbuf chan SocketMessage // send buffer
+	ping    chan struct{}
+	quit    chan struct{}
 }
 
 func (c *client) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
@@ -67,7 +69,7 @@ func (c *client) read() {
 func (c *client) write() {
 	for {
 		select {
-		case message, more := <-c.send:
+		case message, more := <-c.sendbuf:
 			if !more {
 				return
 			}
@@ -90,5 +92,15 @@ func (c *client) write() {
 		case <-c.quit:
 			return
 		}
+	}
+}
+
+// send implements a non-blocking sending
+func (c *client) send(message SocketMessage) {
+	select {
+	case c.sendbuf <- message:
+	default:
+		metrics.IncSendBlocking(len(c.sendbuf))
+		log.Error("sending to client blocked", fmt.Errorf("sendbuf full"), zap.Any("client", c), zap.Any("len(sendbuf)", len(c.sendbuf)))
 	}
 }
