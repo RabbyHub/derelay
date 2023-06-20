@@ -19,7 +19,7 @@ func TestSendChanWithNoReceiver(t *testing.T) {
 			select {
 			case i := <-send:
 				fmt.Printf("received: %v\n", i)
-				if i == 5 {
+				if i == 3 {
 					fmt.Printf("receiving routine exit\n")
 					return
 				}
@@ -33,10 +33,15 @@ func TestSendChanWithNoReceiver(t *testing.T) {
 
 		i := 0
 		for {
-			send <- i
-			fmt.Printf("send: %v\n", i)
-			i++
-			time.Sleep(3 * time.Second)
+			select {
+			case send <- i:
+				fmt.Printf("send: %v\n", i)
+				i++
+				time.Sleep(1 * time.Second)
+			default:
+				fmt.Printf("send buffer is full\n")
+				return
+			}
 		}
 	}()
 
