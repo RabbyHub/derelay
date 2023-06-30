@@ -100,7 +100,8 @@ func main() {
 	waitSeconds := config.RelayServerConfig.GracefulShutdownWaitSeconds
 	log.Printf("Sig %v received, shutting down, graceful shutdown wait: %v seconds\n", sig, waitSeconds)
 
+	relayServer.Shutdown()
+
 	<-time.After(time.Duration(waitSeconds) * time.Second)
 
-	relayServer.Shutdown()
 }
