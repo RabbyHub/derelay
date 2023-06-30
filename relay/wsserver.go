@@ -57,7 +57,7 @@ func NewWSServer(config *config.Config) *WsServer {
 	}
 	ws.redisConn = redis.NewClient(&redis.Options{
 		Addr:     config.RedisServerConfig.ServerAddr,
-		Password: "",
+		Password: config.RedisServerConfig.Password,
 		DB:       0,
 	})
 	ws.redisSubConn = ws.redisConn.Subscribe(context.TODO())
