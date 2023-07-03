@@ -29,8 +29,8 @@ type WsServer struct {
 	redisConn    *redis.Client
 	redisSubConn *redis.PubSub
 
-	publishers  TopicClientSet
-	subscribers TopicClientSet
+	publishers  *TopicClientSet
+	subscribers *TopicClientSet
 
 	localCh chan SocketMessage // for handling message of local clients
 }
@@ -109,12 +109,12 @@ func (ws *WsServer) Run() {
 			switch message.Type {
 			case Pub:
 				// do not modify wsserver's local variable in seperate goroutine
-				message.client.pubTopics[message.Topic] = struct{}{}
+				message.client.pubTopics.Set(message.Topic)
 				ws.publishers.Set(message.Topic, message.client)
 				go ws.pubMessage(message)
 				log.Info("local message", zap.Any("client", message.client), zap.Any("message", message))
 			case Sub:
-				message.client.subTopics[message.Topic] = struct{}{}
+				message.client.subTopics.Set(message.Topic)
 				ws.subscribers.Set(message.Topic, message.client)
 				go ws.subMessage(message)
 				log.Info("local message", zap.Any("client", message.client), zap.Any("message", message))
