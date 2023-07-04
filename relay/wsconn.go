@@ -22,8 +22,8 @@ type client struct {
 	active    bool     // heartbeat related
 	role      RoleType // dapp or wallet
 	session   string   // session id
-	pubTopics TopicSet
-	subTopics TopicSet
+	pubTopics *TopicSet
+	subTopics *TopicSet
 
 	sendbuf chan SocketMessage // send buffer
 	ping    chan struct{}
