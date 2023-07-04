@@ -47,14 +47,6 @@ func startMetricServer(config *config.MetricConfig) {
 	}()
 }
 
-func configOverwriteFromCmdline(defaultConfig config.Config) config.Config {
-	config := config.Config{}
-
-	flag.Parse()
-
-	return config
-}
-
 func parseCmdlineAndLoadConfig() config.Config {
 	cmdlineConfig := config.Config{}
 	configFilePath := flag.String("config", "", "config file")
@@ -71,6 +63,10 @@ func parseCmdlineAndLoadConfig() config.Config {
 	// overwrite with cmdline config
 	if listen := cmdlineConfig.RelayServerConfig.Listen; listen != "" {
 		fileConfig.RelayServerConfig.Listen = listen
+	}
+
+	if serverAddr := cmdlineConfig.RedisServerConfig.ServerAddr; serverAddr != "" {
+		fileConfig.RedisServerConfig.ServerAddr = serverAddr
 	}
 
 	return fileConfig
@@ -103,8 +99,8 @@ func main() {
 	sig := <-sigChan
 	waitSeconds := config.RelayServerConfig.GracefulShutdownWaitSeconds
 	log.Printf("Sig %v received, shutting down, graceful shutdown wait: %v seconds\n", sig, waitSeconds)
-	select {
-	case <-time.After(time.Duration(waitSeconds) * time.Second):
-	}
+
+	<-time.After(time.Duration(waitSeconds) * time.Second)
+
 	relayServer.Shutdown()
 }

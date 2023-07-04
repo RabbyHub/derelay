@@ -2,6 +2,8 @@ package relay
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -44,6 +46,9 @@ func NewRelayServer(config *config.RelayConfig, wsServer *WsServer) *relayServer
 
 func (rs *relayServer) Run() {
 	err := rs.httpServer.ListenAndServe()
+	if err != nil && errors.Is(err, http.ErrServerClosed) {
+		return
+	}
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
@@ -51,6 +56,9 @@ func (rs *relayServer) Run() {
 
 // Shutdown Gracefully shutdown the relay server
 func (rs *relayServer) Shutdown() {
-	rs.httpServer.Shutdown(context.TODO())
+	err := rs.httpServer.Shutdown(context.TODO())
+	if err != nil {
+		fmt.Println(err)
+	}
 	rs.wsServer.Shutdown()
 }
