@@ -79,7 +79,7 @@ func (ws *WsServer) NewClientConn(w http.ResponseWriter, r *http.Request) {
 		ws:        ws,
 		pubTopics: NewTopicSet(),
 		subTopics: NewTopicSet(),
-		sendbuf:   make(chan SocketMessage, 256),
+		sendbuf:   make(chan SocketMessage, 8),
 		ping:      make(chan struct{}, 8),
 		quit:      make(chan struct{}),
 	}
@@ -119,10 +119,6 @@ func (ws *WsServer) Run() {
 				go ws.subMessage(message)
 				log.Info("local message", zap.Any("client", message.client), zap.Any("message", message))
 			case Ping:
-				//if rand.Intn(10000) == 0 {
-				// we need ping message to help us debug, but it's too many so we reduce the log a bit
-				//log.Info("local message", zap.Any("client", message.client), zap.Any("message", message))
-				//}
 				ws.handlePingMessage(message)
 			}
 		case chmessage := <-remoteCh:
