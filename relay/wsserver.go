@@ -3,9 +3,7 @@ package relay
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/RabbyHub/derelay/config"
 	"github.com/RabbyHub/derelay/log"
@@ -79,20 +77,16 @@ func (ws *WsServer) NewClientConn(w http.ResponseWriter, r *http.Request) {
 		ws:        ws,
 		pubTopics: NewTopicSet(),
 		subTopics: NewTopicSet(),
-		sendbuf:   make(chan SocketMessage, 256),
+		sendbuf:   make(chan SocketMessage, 8),
 		ping:      make(chan struct{}, 8),
 		quit:      make(chan struct{}),
 	}
-
-	conn.SetPongHandler(func(appData string) error {
-		client.active = true
-		return nil
-	})
 
 	ws.register <- client
 
 	go client.read()
 	go client.write()
+	go client.heartbeat()
 }
 
 func (ws *WsServer) Run() {
@@ -119,10 +113,6 @@ func (ws *WsServer) Run() {
 				go ws.subMessage(message)
 				log.Info("local message", zap.Any("client", message.client), zap.Any("message", message))
 			case Ping:
-				//if rand.Intn(10000) == 0 {
-				// we need ping message to help us debug, but it's too many so we reduce the log a bit
-				//log.Info("local message", zap.Any("client", message.client), zap.Any("message", message))
-				//}
 				ws.handlePingMessage(message)
 			}
 		case chmessage := <-remoteCh:
@@ -163,17 +153,18 @@ func (ws *WsServer) Run() {
 		case client := <-ws.register:
 			log.Info("new client connection", zap.Any("client", client))
 			metrics.IncNewConnection()
-			metrics.SetCurrentConnections(len(ws.clients))
 			ws.clients[client] = struct{}{}
+			metrics.SetCurrentConnections(len(ws.clients))
 
 		case unregisterEvent := <-ws.unregister:
+			client, reason := unregisterEvent.client, unregisterEvent.reason
+
+			ws.handleClientDisconnect(client)
+			delete(ws.clients, client)
+
 			metrics.IncClosedConnection()
 			metrics.SetCurrentConnections(len(ws.clients))
-			client, reason := unregisterEvent.client, unregisterEvent.reason
 			log.Info("client disconnected", zap.Any("client", client), zap.String("reason", reason.Error()))
-
-			delete(ws.clients, client)
-			ws.handleClientDisconnect(client)
 		}
 	}
 }
@@ -228,39 +219,6 @@ func (ws *WsServer) getCachedMessages(topic string, clear bool) []SocketMessage 
 	}
 
 	return notifications
-}
-
-func (ws *WsServer) handleHeartbeat() {
-	for c := range ws.clients {
-		if !c.active {
-			ws.unregister <- ClientUnregisterEvent{client: c, reason: fmt.Errorf("heartbeat fail")}
-			continue
-		}
-		c.active = false
-		// ping
-		c.ping <- struct{}{}
-	}
-}
-
-func (ws *WsServer) checkSessionExpiration() {
-	now := time.Now()
-	for {
-		session := ws.pendingSessions.peak()
-		if session == nil || session.expireTime.After(now) {
-			break
-		}
-
-		metrics.IncExpiredSessions()
-		log.Info("[wsserver] session expired, notify dapp", zap.String("topic", session.topic))
-		session.dapp.send(SocketMessage{
-			Topic: session.topic,
-			Type:  Pub,
-			Role:  string(Relay),
-			Phase: string(SessionExpired),
-		})
-
-		ws.pendingSessions.pop()
-	}
 }
 
 func (ws *WsServer) Shutdown() {
