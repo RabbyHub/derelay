@@ -44,7 +44,7 @@ func ProductionModeWithoutStackTrace() {
 	config := zap.NewProductionConfig()
 	config.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
 	config.DisableStacktrace = true
-	config.OutputPaths = append(config.OutputPaths)
+	//config.OutputPaths = append(config.OutputPaths)
 
 	buildLoggerWithConfig(config)
 }
