@@ -18,12 +18,13 @@ type client struct {
 	conn *websocket.Conn
 	ws   *WsServer
 
-	id        string   // randomly generate, just for logging
-	active    bool     // heartbeat related
-	role      RoleType // dapp or wallet
-	session   string   // session id
-	pubTopics *TopicSet
-	subTopics *TopicSet
+	id         string   // randomly generate, just for logging
+	active     bool     // heartbeat related
+	terminated bool     //
+	role       RoleType // dapp or wallet
+	session    string   // session id
+	pubTopics  *TopicSet
+	subTopics  *TopicSet
 
 	sendbuf chan SocketMessage // send buffer
 	ping    chan struct{}
@@ -41,13 +42,30 @@ func (c *client) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	return nil
 }
 
+func (c *client) heartbeat() {
+
+	c.conn.SetPongHandler(func(appData string) error {
+		c.active = true
+		return nil
+	})
+
+	for {
+		if !c.active {
+			c.terminate(fmt.Errorf("heartbeat fail"))
+			return
+		}
+		c.active = false
+
+		c.conn.WriteControl(websocket.PingMessage, []byte("ping"), time.Now().Add(5*time.Second))
+		<-time.After(10 * time.Second)
+	}
+}
+
 func (c *client) read() {
 	for {
 		_, m, err := c.conn.ReadMessage()
 		if err != nil {
-			c.quit <- struct{}{}
-			c.conn.Close()
-			c.ws.unregister <- ClientUnregisterEvent{client: c, reason: err}
+			c.terminate(err)
 			return
 		}
 
@@ -81,6 +99,8 @@ func (c *client) write() {
 			err := c.conn.WriteMessage(websocket.TextMessage, m.Bytes())
 			if err != nil {
 				log.Error("client write error", err, zap.Any("client", c), zap.Any("message", message))
+				c.terminate(err)
+				return
 			}
 		case _, more := <-c.ping:
 			if !more {
@@ -101,6 +121,16 @@ func (c *client) send(message SocketMessage) {
 	case c.sendbuf <- message:
 	default:
 		metrics.IncSendBlocking(len(c.sendbuf))
-		log.Error("sending to client blocked", fmt.Errorf("sendbuf full"), zap.Any("client", c), zap.Any("len(sendbuf)", len(c.sendbuf)))
+		log.Error("sending to client blocked", fmt.Errorf("sendbuf full"), zap.Any("client", c), zap.Any("len(sendbuf)", len(c.sendbuf)), zap.Any("message", message))
+	}
+}
+
+func (c *client) terminate(reason error) {
+	if !c.terminated {
+		c.terminated = true
+		c.active = false
+		//c.quit <- struct{}{}
+		c.conn.Close()
+		c.ws.unregister <- ClientUnregisterEvent{client: c, reason: reason}
 	}
 }

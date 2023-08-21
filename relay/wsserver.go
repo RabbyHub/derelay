@@ -84,15 +84,11 @@ func (ws *WsServer) NewClientConn(w http.ResponseWriter, r *http.Request) {
 		quit:      make(chan struct{}),
 	}
 
-	conn.SetPongHandler(func(appData string) error {
-		client.active = true
-		return nil
-	})
-
 	ws.register <- client
 
 	go client.read()
 	go client.write()
+	go client.heartbeat()
 }
 
 func (ws *WsServer) Run() {
@@ -159,17 +155,18 @@ func (ws *WsServer) Run() {
 		case client := <-ws.register:
 			log.Info("new client connection", zap.Any("client", client))
 			metrics.IncNewConnection()
-			metrics.SetCurrentConnections(len(ws.clients))
 			ws.clients[client] = struct{}{}
+			metrics.SetCurrentConnections(len(ws.clients))
 
 		case unregisterEvent := <-ws.unregister:
+			client, reason := unregisterEvent.client, unregisterEvent.reason
+
+			ws.handleClientDisconnect(client)
+			delete(ws.clients, client)
+
 			metrics.IncClosedConnection()
 			metrics.SetCurrentConnections(len(ws.clients))
-			client, reason := unregisterEvent.client, unregisterEvent.reason
 			log.Info("client disconnected", zap.Any("client", client), zap.String("reason", reason.Error()))
-
-			delete(ws.clients, client)
-			ws.handleClientDisconnect(client)
 		}
 	}
 }
@@ -229,7 +226,7 @@ func (ws *WsServer) getCachedMessages(topic string, clear bool) []SocketMessage 
 func (ws *WsServer) handleHeartbeat() {
 	for c := range ws.clients {
 		if !c.active {
-			ws.unregister <- ClientUnregisterEvent{client: c, reason: fmt.Errorf("heartbeat fail")}
+			c.terminate(fmt.Errorf("heartbeat fail"))
 			continue
 		}
 		c.active = false

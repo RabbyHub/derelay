@@ -1,2 +1,4 @@
 redis_config:
-  server_addr: "redis:6379"
+  server_addr: 127.0.0.1:6379
+metric_config:
+  enabled: true
