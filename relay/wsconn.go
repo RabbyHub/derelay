@@ -129,7 +129,7 @@ func (c *client) terminate(reason error) {
 	if !c.terminated {
 		c.terminated = true
 		c.active = false
-		//c.quit <- struct{}{}
+		c.quit <- struct{}{}
 		c.conn.Close()
 		c.ws.unregister <- ClientUnregisterEvent{client: c, reason: reason}
 	}
