@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/RabbyHub/derelay/log"
@@ -18,11 +19,11 @@ type client struct {
 	conn *websocket.Conn
 	ws   *WsServer
 
-	id         string   // randomly generate, just for logging
-	active     bool     // heartbeat related
-	terminated bool     //
-	role       RoleType // dapp or wallet
-	session    string   // session id
+	id         string      // randomly generate, just for logging
+	active     bool        // heartbeat related
+	terminated atomic.Bool //
+	role       RoleType    // dapp or wallet
+	session    string      // session id
 	pubTopics  *TopicSet
 	subTopics  *TopicSet
 
@@ -126,8 +127,7 @@ func (c *client) send(message SocketMessage) {
 }
 
 func (c *client) terminate(reason error) {
-	if !c.terminated {
-		c.terminated = true
+	if c.terminated.CompareAndSwap(false, true) {
 		c.active = false
 		c.quit <- struct{}{}
 		c.conn.Close()

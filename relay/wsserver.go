@@ -3,9 +3,7 @@ package relay
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/RabbyHub/derelay/config"
 	"github.com/RabbyHub/derelay/log"
@@ -221,39 +219,6 @@ func (ws *WsServer) getCachedMessages(topic string, clear bool) []SocketMessage 
 	}
 
 	return notifications
-}
-
-func (ws *WsServer) handleHeartbeat() {
-	for c := range ws.clients {
-		if !c.active {
-			c.terminate(fmt.Errorf("heartbeat fail"))
-			continue
-		}
-		c.active = false
-		// ping
-		c.ping <- struct{}{}
-	}
-}
-
-func (ws *WsServer) checkSessionExpiration() {
-	now := time.Now()
-	for {
-		session := ws.pendingSessions.peak()
-		if session == nil || session.expireTime.After(now) {
-			break
-		}
-
-		metrics.IncExpiredSessions()
-		log.Info("[wsserver] session expired, notify dapp", zap.String("topic", session.topic))
-		session.dapp.send(SocketMessage{
-			Topic: session.topic,
-			Type:  Pub,
-			Role:  string(Relay),
-			Phase: string(SessionExpired),
-		})
-
-		ws.pendingSessions.pop()
-	}
 }
 
 func (ws *WsServer) Shutdown() {
