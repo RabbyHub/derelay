@@ -56,7 +56,7 @@ func (c *client) heartbeat() {
 		}
 		c.active = false
 
-		c.conn.WriteControl(websocket.PingMessage, []byte("ping"), time.Now().Add(5*time.Second))
+		_ = c.conn.WriteControl(websocket.PingMessage, []byte("ping"), time.Now().Add(5*time.Second))
 		<-time.After(10 * time.Second)
 	}
 }
