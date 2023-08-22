@@ -54,4 +54,5 @@ func init() {
 	prometheus.MustRegister(countNewConnections)
 	prometheus.MustRegister(countClosedConnections)
 	prometheus.MustRegister(gaugeCurrentConnections)
+	prometheus.MustRegister(countSendBlocking)
 }
