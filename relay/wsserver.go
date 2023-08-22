@@ -45,7 +45,7 @@ func NewWSServer(config *config.Config) *WsServer {
 
 		clients:         make(map[*client]struct{}),
 		register:        make(chan *client, 1024),
-		unregister:      make(chan ClientUnregisterEvent, 1024),
+		unregister:      make(chan ClientUnregisterEvent, 4096),
 		pendingSessions: NewSortedPendingSessions(),
 
 		publishers:  NewTopicClientSet(),
