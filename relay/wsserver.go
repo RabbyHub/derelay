@@ -44,7 +44,7 @@ func NewWSServer(config *config.Config) *WsServer {
 		config: &config.WsServerConfig, // config
 
 		clients:         make(map[*client]struct{}),
-		register:        make(chan *client, 1024),
+		register:        make(chan *client, 4096),
 		unregister:      make(chan ClientUnregisterEvent, 4096),
 		pendingSessions: NewSortedPendingSessions(),
 
@@ -130,7 +130,6 @@ func (ws *WsServer) Run() {
 					log.Info("forward to subscriber", zap.Any("client", subscriber), zap.Any("message", message))
 					subscriber.send(message)
 				}
-
 				continue
 			}
 
