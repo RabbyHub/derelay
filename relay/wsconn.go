@@ -28,7 +28,6 @@ type client struct {
 	subTopics  *TopicSet
 
 	sendbuf chan SocketMessage // send buffer
-	ping    chan struct{}
 	quit    chan struct{}
 }
 
@@ -103,13 +102,6 @@ func (c *client) write() {
 				c.terminate(err)
 				return
 			}
-		case _, more := <-c.ping:
-			if !more {
-				return
-			}
-			if err := c.conn.WriteControl(websocket.PingMessage, []byte("ping"), time.Now().Add(5*time.Second)); err != nil {
-				log.Error("client ping error", err)
-			}
 		case <-c.quit:
 			return
 		}
@@ -122,7 +114,7 @@ func (c *client) send(message SocketMessage) {
 	case c.sendbuf <- message:
 	default:
 		metrics.IncSendBlocking(len(c.sendbuf))
-		log.Error("sending to client blocked", fmt.Errorf("sendbuf full"), zap.Any("client", c), zap.Any("len(sendbuf)", len(c.sendbuf)), zap.Any("message", message))
+		log.Error("client sendbuf full", fmt.Errorf(""), zap.Any("client", c), zap.Any("len(sendbuf)", len(c.sendbuf)), zap.Any("message", message))
 	}
 }
 

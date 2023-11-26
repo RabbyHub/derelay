@@ -51,7 +51,7 @@ func NewWSServer(config *config.Config) *WsServer {
 		publishers:  NewTopicClientSet(),
 		subscribers: NewTopicClientSet(),
 
-		localCh: make(chan SocketMessage, 1024),
+		localCh: make(chan SocketMessage, 8),
 	}
 	ws.redisConn = redis.NewClient(&redis.Options{
 		Addr:     config.RedisServerConfig.ServerAddr,
@@ -77,8 +77,7 @@ func (ws *WsServer) NewClientConn(w http.ResponseWriter, r *http.Request) {
 		ws:        ws,
 		pubTopics: NewTopicSet(),
 		subTopics: NewTopicSet(),
-		sendbuf:   make(chan SocketMessage, 8),
-		ping:      make(chan struct{}, 8),
+		sendbuf:   make(chan SocketMessage, 256),
 		quit:      make(chan struct{}),
 	}
 
