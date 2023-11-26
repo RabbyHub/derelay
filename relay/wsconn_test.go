@@ -16,13 +16,11 @@ func TestSendChanWithNoReceiver(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		for {
-			select {
-			case i := <-send:
-				fmt.Printf("received: %v\n", i)
-				if i == 3 {
-					fmt.Printf("receiving routine exit\n")
-					return
-				}
+			i := <-send
+			fmt.Printf("received: %v\n", i)
+			if i == 3 {
+				fmt.Printf("receiving routine exit\n")
+				return
 			}
 		}
 	}()
