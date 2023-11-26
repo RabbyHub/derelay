@@ -21,9 +21,6 @@ type WsServer struct {
 	register   chan *client
 	unregister chan ClientUnregisterEvent
 
-	// session maintenance
-	pendingSessions *SortedPendingSessions
-
 	redisConn    *redis.Client
 	redisSubConn *redis.PubSub
 
@@ -43,10 +40,9 @@ func NewWSServer(config *config.Config) *WsServer {
 	ws := &WsServer{
 		config: &config.WsServerConfig, // config
 
-		clients:         make(map[*client]struct{}),
-		register:        make(chan *client, 4096),
-		unregister:      make(chan ClientUnregisterEvent, 4096),
-		pendingSessions: NewSortedPendingSessions(),
+		clients:    make(map[*client]struct{}),
+		register:   make(chan *client, 4096),
+		unregister: make(chan ClientUnregisterEvent, 4096),
 
 		publishers:  NewTopicClientSet(),
 		subscribers: NewTopicClientSet(),
