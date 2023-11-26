@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"strconv"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -25,12 +24,12 @@ var (
 		Help:      "Number of current connections",
 	})
 
-	countSendBlocking = prometheus.NewCounterVec(prometheus.CounterOpts{
+	countSendBlocking = prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: promNamespace,
 		Subsystem: promSubsystem,
 		Name:      "send_blockings",
 		Help:      "Number of send blocking connections",
-	}, []string{"sendbuflen"})
+	})
 )
 
 func IncNewConnection() {
@@ -41,9 +40,8 @@ func IncClosedConnection() {
 	countClosedConnections.Inc()
 }
 
-func IncSendBlocking(sendbufLen int) {
-	lenstr := strconv.Itoa(sendbufLen)
-	countSendBlocking.With(prometheus.Labels{"sendbuflen": lenstr}).Inc()
+func IncSendBlocking() {
+	countSendBlocking.Inc()
 }
 
 func SetCurrentConnections(num int) {

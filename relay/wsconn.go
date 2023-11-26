@@ -113,7 +113,7 @@ func (c *client) send(message SocketMessage) {
 	select {
 	case c.sendbuf <- message:
 	default:
-		metrics.IncSendBlocking(len(c.sendbuf))
+		metrics.IncSendBlocking()
 		log.Error("client sendbuf full", fmt.Errorf(""), zap.Any("client", c), zap.Any("len(sendbuf)", len(c.sendbuf)), zap.Any("message", message))
 	}
 }
