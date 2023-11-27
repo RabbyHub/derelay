@@ -69,7 +69,6 @@ func (ws *WsServer) NewClientConn(w http.ResponseWriter, r *http.Request) {
 	client := &client{
 		conn:      conn,
 		id:        generateRandomBytes16(),
-		active:    true,
 		ws:        ws,
 		pubTopics: NewTopicSet(),
 		subTopics: NewTopicSet(),
