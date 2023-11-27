@@ -81,7 +81,7 @@ func (ws *WsServer) NewClientConn(w http.ResponseWriter, r *http.Request) {
 
 	go client.read()
 	go client.write()
-	go client.heartbeat()
+	//go client.heartbeat()
 }
 
 func (ws *WsServer) Run() {

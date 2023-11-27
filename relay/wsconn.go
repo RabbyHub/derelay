@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 	"sync/atomic"
-	"time"
 
 	"github.com/RabbyHub/derelay/log"
 	"github.com/RabbyHub/derelay/metrics"
@@ -42,24 +41,24 @@ func (c *client) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	return nil
 }
 
-func (c *client) heartbeat() {
+// func (c *client) heartbeat() {
 
-	c.conn.SetPongHandler(func(appData string) error {
-		c.active = true
-		return nil
-	})
+// 	c.conn.SetPongHandler(func(appData string) error {
+// 		c.active = true
+// 		return nil
+// 	})
 
-	for {
-		if !c.active {
-			c.terminate(fmt.Errorf("heartbeat fail"))
-			return
-		}
-		c.active = false
+// 	for {
+// 		if !c.active {
+// 			c.terminate(fmt.Errorf("heartbeat fail"))
+// 			return
+// 		}
+// 		c.active = false
 
-		_ = c.conn.WriteControl(websocket.PingMessage, []byte("ping"), time.Now().Add(5*time.Second))
-		<-time.After(10 * time.Second)
-	}
-}
+// 		_ = c.conn.WriteControl(websocket.PingMessage, []byte("ping"), time.Now().Add(5*time.Second))
+// 		<-time.After(10 * time.Second)
+// 	}
+// }
 
 func (c *client) read() {
 	for {
