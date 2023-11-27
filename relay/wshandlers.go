@@ -54,11 +54,11 @@ func (ws *WsServer) subMessage(message SocketMessage) {
 	if err := ws.redisSubConn.Subscribe(context.TODO(), messageChanKey(topic)); err != nil {
 		log.Warn("[redisSub] subscribe to topic fail", zap.String("topic", topic), zap.Any("client", subscriber))
 	}
-	log.Info("subscribe to topic", zap.String("topic", topic), zap.Any("client", subscriber))
+	//log.Info("subscribe to topic", zap.String("topic", topic), zap.Any("client", subscriber))
 
 	// forward cached notificatoins if there's any
 	notifications := ws.getCachedMessages(topic, true)
-	log.Info("pending notifications", zap.String("topic", topic), zap.Any("num", len(notifications)), zap.Any("client", subscriber))
+	//log.Info("pending notifications", zap.String("topic", topic), zap.Any("num", len(notifications)), zap.Any("client", subscriber))
 	for _, notification := range notifications {
 		subscriber.send(notification)
 	}
@@ -84,7 +84,7 @@ func (ws *WsServer) subMessage(message SocketMessage) {
 			if noti.Phase == string(SessionRequest) { // handle the 1st case stated above
 				subscriber.session = noti.Topic
 				metrics.IncReceivedSessions()
-				log.Info("session been scanned", zap.Any("topic", topic), zap.Any("client", subscriber))
+				//log.Info("session been scanned", zap.Any("topic", topic), zap.Any("client", subscriber))
 
 				// notify the topic publisher, aka the dapp, that the session request has been received by wallet
 				key := dappNotifyChanKey(noti.Topic)
