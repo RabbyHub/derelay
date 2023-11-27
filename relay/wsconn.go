@@ -87,10 +87,7 @@ func (c *client) read() {
 func (c *client) write() {
 	for {
 		select {
-		case message, more := <-c.sendbuf:
-			if !more {
-				return
-			}
+		case message := <-c.sendbuf:
 			m := new(bytes.Buffer)
 			if err := json.NewEncoder(m).Encode(message); err != nil {
 				log.Warn("sending malformed text message", zap.Error(err))
@@ -102,8 +99,10 @@ func (c *client) write() {
 				c.terminate(err)
 				return
 			}
-		case <-c.quit:
-			return
+		default:
+			if !c.active {
+				return
+			}
 		}
 	}
 }
@@ -124,5 +123,6 @@ func (c *client) terminate(reason error) {
 		c.quit <- struct{}{}
 		c.conn.Close()
 		c.ws.unregister <- ClientUnregisterEvent{client: c, reason: reason}
+		c.ws = nil
 	}
 }
