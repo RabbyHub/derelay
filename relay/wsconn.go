@@ -95,7 +95,7 @@ func (c *client) write() {
 			err := c.conn.WriteMessage(websocket.TextMessage, m.Bytes())
 			if err != nil {
 				log.Error("client write error", err, zap.Any("client", c), zap.Any("message", message))
-				c.terminate(err)
+				//c.terminate(err)
 				return
 			}
 		case <-c.quit:
