@@ -121,6 +121,5 @@ func (c *client) terminate(reason error) {
 		c.quit <- struct{}{}
 		c.conn.Close()
 		c.ws.unregister <- ClientUnregisterEvent{client: c, reason: reason}
-		c.ws = nil
 	}
 }
