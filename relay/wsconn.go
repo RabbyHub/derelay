@@ -30,8 +30,8 @@ func (c *client) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	if c != nil {
 		encoder.AddString("id", c.id)
 		encoder.AddString("role", string(c.role))
-		encoder.AddArray("pubTopics", c.pubTopics)
-		encoder.AddArray("subTopics", c.subTopics)
+		//encoder.AddArray("pubTopics", c.pubTopics)
+		//encoder.AddArray("subTopics", c.subTopics)
 	}
 	return nil
 }
