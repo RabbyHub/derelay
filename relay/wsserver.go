@@ -147,7 +147,7 @@ func (ws *WsServer) Run() {
 			}
 
 		case client := <-ws.register:
-			log.Info("new client connection", zap.Any("client", client))
+			//log.Info("new client connection", zap.Any("client", client))
 			metrics.IncNewConnection()
 			ws.clients[client] = struct{}{}
 			metrics.SetCurrentConnections(len(ws.clients))
