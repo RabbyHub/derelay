@@ -18,7 +18,6 @@ type SortedPendingSessions struct {
 type pendingSession struct {
 	expireTime time.Time
 	topic      string
-	dapp       *client
 }
 
 func (pq PendingSessions) Len() int { return len(pq) }

@@ -11,14 +11,6 @@ import (
 
 type WsMessageHandler func(*WsServer, SocketMessage)
 
-var (
-	messageHandlers = map[MessageType]WsMessageHandler{
-		Pub:  (*WsServer).pubMessage,
-		Sub:  (*WsServer).subMessage,
-		Ping: (*WsServer).handlePingMessage,
-	}
-)
-
 func (ws *WsServer) pubMessage(message SocketMessage) {
 	topic := message.Topic
 	publisher := message.client

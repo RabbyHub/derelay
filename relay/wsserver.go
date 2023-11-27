@@ -21,9 +21,6 @@ type WsServer struct {
 	register   chan *client
 	unregister chan ClientUnregisterEvent
 
-	// session maintenance
-	pendingSessions *SortedPendingSessions
-
 	redisConn    *redis.Client
 	redisSubConn *redis.PubSub
 
@@ -43,15 +40,14 @@ func NewWSServer(config *config.Config) *WsServer {
 	ws := &WsServer{
 		config: &config.WsServerConfig, // config
 
-		clients:         make(map[*client]struct{}),
-		register:        make(chan *client, 1024),
-		unregister:      make(chan ClientUnregisterEvent, 1024),
-		pendingSessions: NewSortedPendingSessions(),
+		clients:    make(map[*client]struct{}),
+		register:   make(chan *client, 4096),
+		unregister: make(chan ClientUnregisterEvent, 4096),
 
 		publishers:  NewTopicClientSet(),
 		subscribers: NewTopicClientSet(),
 
-		localCh: make(chan SocketMessage, 1024),
+		localCh: make(chan SocketMessage, 2),
 	}
 	ws.redisConn = redis.NewClient(&redis.Options{
 		Addr:     config.RedisServerConfig.ServerAddr,
@@ -73,12 +69,10 @@ func (ws *WsServer) NewClientConn(w http.ResponseWriter, r *http.Request) {
 	client := &client{
 		conn:      conn,
 		id:        generateRandomBytes16(),
-		active:    true,
 		ws:        ws,
 		pubTopics: NewTopicSet(),
 		subTopics: NewTopicSet(),
-		sendbuf:   make(chan SocketMessage, 8),
-		ping:      make(chan struct{}, 8),
+		sendbuf:   make(chan SocketMessage, 256),
 		quit:      make(chan struct{}),
 	}
 
@@ -86,7 +80,7 @@ func (ws *WsServer) NewClientConn(w http.ResponseWriter, r *http.Request) {
 
 	go client.read()
 	go client.write()
-	go client.heartbeat()
+	//go client.heartbeat()
 }
 
 func (ws *WsServer) Run() {
@@ -97,6 +91,9 @@ func (ws *WsServer) Run() {
 	for {
 		select {
 		case message := <-ws.localCh:
+			if _, ok := ws.clients[message.client]; !ok {
+				metrics.IncMessageFromClosed()
+			}
 			// local message could be "pub", "sub" or "ack" or "ping"
 			// pub/sub message handler may contain time-consuming operations(e.g. read/write redis)
 			// so put them in separate goroutine to avoid blocking wsserver main loop
@@ -131,7 +128,6 @@ func (ws *WsServer) Run() {
 					log.Info("forward to subscriber", zap.Any("client", subscriber), zap.Any("message", message))
 					subscriber.send(message)
 				}
-
 				continue
 			}
 
