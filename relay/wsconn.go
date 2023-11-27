@@ -99,10 +99,8 @@ func (c *client) write() {
 				c.terminate(err)
 				return
 			}
-		default:
-			if !c.active {
-				return
-			}
+		case <-c.quit:
+			return
 		}
 	}
 }
