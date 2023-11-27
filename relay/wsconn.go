@@ -68,12 +68,12 @@ func (c *client) write() {
 			m := new(bytes.Buffer)
 			if err := json.NewEncoder(m).Encode(message); err != nil {
 				log.Warn("sending malformed text message", zap.Error(err))
-				return
+				continue
 			}
 			err := c.conn.WriteMessage(websocket.TextMessage, m.Bytes())
 			if err != nil {
 				log.Error("client write error", err, zap.Any("client", c), zap.Any("message", message))
-				return
+				continue
 			}
 		case <-c.quit:
 			return
