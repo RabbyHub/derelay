@@ -37,8 +37,8 @@ func startMetricServer(config *config.MetricConfig) {
 	s := &http.Server{
 		Addr:           config.Listen,
 		Handler:        r,
-		ReadTimeout:    30 * time.Second,
-		WriteTimeout:   30 * time.Second,
+		ReadTimeout:    60 * time.Second,
+		WriteTimeout:   60 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 
