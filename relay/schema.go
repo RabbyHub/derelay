@@ -159,6 +159,16 @@ func NewTopicSet() *TopicSet {
 	}
 }
 
+func (tm TopicSet) Get() map[string]struct{} {
+	tm.Lock()
+	defer tm.Unlock()
+	newmap := make(map[string]struct{})
+	for key, value := range tm.Data {
+		newmap[key] = value
+	}
+	return newmap
+}
+
 func (tm TopicSet) Set(topic string) {
 	tm.Lock()
 	defer tm.Unlock()

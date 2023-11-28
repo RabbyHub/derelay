@@ -85,3 +85,27 @@ func TestGetTopicsByClientAndClear(t *testing.T) {
 		t.Errorf("length error, expected: %v, actual: %v", expectedLen, actualLen)
 	}
 }
+
+func TestTopicGet(t *testing.T) {
+	ts := NewTopicSet()
+
+	ts.Set("hello")
+	ts.Set("hello1")
+	ts.Set("hello2")
+
+	topics := ts.Get()
+	actualLen := len(topics)
+	expectedLen := 3
+	if actualLen != expectedLen {
+		t.Errorf("length error, expected: %v, actual: %v", expectedLen, actualLen)
+	}
+	if _, ok := topics["hello"]; !ok {
+		t.Errorf("key does not exists")
+	}
+	if _, ok := topics["hello1"]; !ok {
+		t.Errorf("key does not exists")
+	}
+	if _, ok := topics["hello2"]; !ok {
+		t.Errorf("key does not exists")
+	}
+}

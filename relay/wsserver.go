@@ -70,8 +70,8 @@ func (ws *WsServer) NewClientConn(w http.ResponseWriter, r *http.Request) {
 		conn:      conn,
 		id:        generateRandomBytes16(),
 		ws:        ws,
-		//pubTopics: NewTopicSet(),
-		//subTopics: NewTopicSet(),
+		pubTopics: NewTopicSet(),
+		subTopics: NewTopicSet(),
 		sendbuf:   make(chan SocketMessage, 256),
 		quit:      make(chan struct{}),
 	}
@@ -100,12 +100,12 @@ func (ws *WsServer) Run() {
 			switch message.Type {
 			case Pub:
 				// do not modify wsserver's local variable in seperate goroutine
-				//message.client.pubTopics.Set(message.Topic)
+				message.client.pubTopics.Set(message.Topic)
 				ws.publishers.Set(message.Topic, message.client)
 				go ws.pubMessage(message)
 				log.Info("local message", zap.Any("client", message.client), zap.Any("message", message))
 			case Sub:
-				//message.client.subTopics.Set(message.Topic)
+				message.client.subTopics.Set(message.Topic)
 				ws.subscribers.Set(message.Topic, message.client)
 				go ws.subMessage(message)
 				log.Info("local message", zap.Any("client", message.client), zap.Any("message", message))
