@@ -30,13 +30,6 @@ var (
 		Name:      "send_blockings",
 		Help:      "Number of send blocking connections",
 	})
-
-	countMessageFromClosed = prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace: promNamespace,
-		Subsystem: promSubsystem,
-		Name:      "sending_on_closed",
-		Help:      "Number of sending on closed connections",
-	})
 )
 
 func IncNewConnection() {
@@ -49,10 +42,6 @@ func IncClosedConnection() {
 
 func IncSendBlocking() {
 	countSendBlocking.Inc()
-}
-
-func IncMessageFromClosed() {
-	countMessageFromClosed.Inc()
 }
 
 func SetCurrentConnections(num int) {

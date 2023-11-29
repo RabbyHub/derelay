@@ -1,6 +1,8 @@
 package relay
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"strings"
 	"sync"
@@ -187,4 +189,12 @@ func (tm TopicSet) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 type ClientUnregisterEvent struct {
 	client *client
 	reason error
+}
+
+func generateRandomBytes16() string {
+	buf := make([]byte, 16)
+	if _, err := rand.Read(buf); err != nil {
+		return ""
+	}
+	return base64.StdEncoding.EncodeToString(buf)
 }

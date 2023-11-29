@@ -90,9 +90,6 @@ func (ws *WsServer) Run() {
 	for {
 		select {
 		case message := <-ws.localCh:
-			if _, ok := ws.clients[message.client]; !ok {
-				metrics.IncMessageFromClosed()
-			}
 			// local message could be "pub", "sub" or "ack" or "ping"
 			// pub/sub message handler may contain time-consuming operations(e.g. read/write redis)
 			// so put them in separate goroutine to avoid blocking wsserver main loop
