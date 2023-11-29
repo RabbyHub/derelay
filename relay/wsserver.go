@@ -80,7 +80,6 @@ func (ws *WsServer) NewClientConn(w http.ResponseWriter, r *http.Request) {
 
 	go client.read()
 	go client.write()
-	//go client.heartbeat()
 }
 
 func (ws *WsServer) Run() {
@@ -143,7 +142,6 @@ func (ws *WsServer) Run() {
 			}
 
 		case client := <-ws.register:
-			//log.Info("new client connection", zap.Any("client", client))
 			metrics.IncNewConnection()
 			ws.clients[client] = struct{}{}
 			metrics.SetCurrentConnections(len(ws.clients))
