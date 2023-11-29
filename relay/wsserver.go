@@ -134,7 +134,7 @@ func (ws *WsServer) Run() {
 			//	* SessionResumed
 			// 	* relay generated fake "ack" for the wallet
 			for _, publisher := range ws.GetDappPublisher(message.Topic) {
-				log.Info("wallet updates, notify dapp", zap.Any("client", publisher), zap.Any("message", message))
+				log.Debug("wallet updates, notify dapp", zap.Any("client", publisher), zap.Any("message", message))
 				publisher.send(message)
 			}
 
