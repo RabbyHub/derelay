@@ -3,7 +3,6 @@ package relay
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/RabbyHub/derelay/log"
@@ -19,7 +18,6 @@ type client struct {
 
 	id        string   // randomly generate, just for logging
 	role      RoleType // dapp or wallet
-	session   string   // session id
 	pubTopics *TopicSet
 	subTopics *TopicSet
 
@@ -31,7 +29,6 @@ func (c *client) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	if c != nil {
 		encoder.AddString("id", c.id)
 		encoder.AddString("role", string(c.role))
-		encoder.AddString("session", string(c.session))
 		encoder.AddArray("pubTopics", c.pubTopics)
 		encoder.AddArray("subTopics", c.subTopics)
 	}
@@ -87,7 +84,6 @@ func (c *client) send(message SocketMessage) {
 	case c.sendbuf <- message:
 	default:
 		metrics.IncSendBlocking()
-		log.Error("client sendbuf full", fmt.Errorf(""), zap.Any("client", c), zap.Any("len(sendbuf)", len(c.sendbuf)), zap.Any("message", message))
 	}
 }
 

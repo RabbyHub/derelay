@@ -1,6 +1,8 @@
 package relay
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"strings"
 	"sync"
@@ -159,6 +161,16 @@ func NewTopicSet() *TopicSet {
 	}
 }
 
+func (tm TopicSet) Get() map[string]struct{} {
+	tm.Lock()
+	defer tm.Unlock()
+	newmap := make(map[string]struct{})
+	for key, value := range tm.Data {
+		newmap[key] = value
+	}
+	return newmap
+}
+
 func (tm TopicSet) Set(topic string) {
 	tm.Lock()
 	defer tm.Unlock()
@@ -177,4 +189,12 @@ func (tm TopicSet) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 type ClientUnregisterEvent struct {
 	client *client
 	reason error
+}
+
+func generateRandomBytes16() string {
+	buf := make([]byte, 16)
+	if _, err := rand.Read(buf); err != nil {
+		return ""
+	}
+	return base64.StdEncoding.EncodeToString(buf)
 }

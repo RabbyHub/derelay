@@ -24,12 +24,12 @@ func (ws *WsServer) pubMessage(message SocketMessage) {
 		}
 	}
 
-	log.Info("publish message", zap.Any("client", publisher), zap.Any("topic", message.Topic))
+	log.Debug("publish message", zap.Any("client", publisher), zap.Any("topic", message.Topic))
 
 	metrics.IncTotalMessages()
 	key := messageChanKey(topic)
 	if count, _ := ws.redisConn.Publish(context.TODO(), key, message).Result(); count >= 1 {
-		log.Info("message published", zap.Any("client", publisher), zap.Any("topic", topic))
+		log.Debug("message published", zap.Any("client", publisher), zap.Any("topic", topic))
 		if publisher.role == Dapp {
 			publisher.send(SocketMessage{
 				Topic: message.Topic,
@@ -38,7 +38,7 @@ func (ws *WsServer) pubMessage(message SocketMessage) {
 			})
 		}
 	} else {
-		log.Info("cache message", zap.Any("client", publisher), zap.Any("topic", topic))
+		log.Debug("cache message", zap.Any("client", publisher), zap.Any("topic", topic))
 		metrics.IncCachedMessages()
 		if message.Phase == string(SessionRequest) {
 			metrics.IncNewRequestedSessions()
@@ -54,11 +54,11 @@ func (ws *WsServer) subMessage(message SocketMessage) {
 	if err := ws.redisSubConn.Subscribe(context.TODO(), messageChanKey(topic)); err != nil {
 		log.Warn("[redisSub] subscribe to topic fail", zap.String("topic", topic), zap.Any("client", subscriber))
 	}
-	log.Info("subscribe to topic", zap.String("topic", topic), zap.Any("client", subscriber))
+	log.Debug("subscribe to topic", zap.String("topic", topic), zap.Any("client", subscriber))
 
 	// forward cached notificatoins if there's any
 	notifications := ws.getCachedMessages(topic, true)
-	log.Info("pending notifications", zap.String("topic", topic), zap.Any("num", len(notifications)), zap.Any("client", subscriber))
+	log.Debug("pending notifications", zap.String("topic", topic), zap.Any("num", len(notifications)), zap.Any("client", subscriber))
 	for _, notification := range notifications {
 		subscriber.send(notification)
 	}
@@ -82,9 +82,8 @@ func (ws *WsServer) subMessage(message SocketMessage) {
 			// messages from wallet
 
 			if noti.Phase == string(SessionRequest) { // handle the 1st case stated above
-				subscriber.session = noti.Topic
 				metrics.IncReceivedSessions()
-				log.Info("session been scanned", zap.Any("topic", topic), zap.Any("client", subscriber))
+				log.Debug("session been scanned", zap.Any("topic", topic), zap.Any("client", subscriber))
 
 				// notify the topic publisher, aka the dapp, that the session request has been received by wallet
 				key := dappNotifyChanKey(noti.Topic)
@@ -136,24 +135,24 @@ func (ws *WsServer) handleClientDisconnect(client *client) {
 
 	// clear the client from the subscribed and published topics
 	channelsToClear := []string{}
-	subscribedTopics := ws.subscribers.GetTopicsByClient(client, true)
+	//subscribedTopics := ws.subscribers.GetTopicsByClient(client, true)
+	subscribedTopics := client.subTopics.Get()
 
-	for _, topic := range subscribedTopics {
-		count := len(ws.subscribers.Get(topic))
-		if count == 0 {
+	for topic := range subscribedTopics {
+		ws.subscribers.Unset(topic, client)
+		if ws.subscribers.Len(topic) == 0 {
 			channelsToClear = append(channelsToClear, messageChanKey(topic))
 		}
 	}
-
-	if client.role == Dapp {
-		// clear dapp notify channels
-		publishedChannels := []string{}
-		for _, topic := range ws.publishers.GetTopicsByClient(client, true) {
-			if len(ws.publishers.Get(topic)) == 0 {
-				publishedChannels = append(publishedChannels, dappNotifyChanKey(topic))
+	for topic := range client.pubTopics.Get() {
+		ws.publishers.Unset(topic, client)
+		if ws.publishers.Len(topic) == 0 {
+			channelsToClear = append(channelsToClear, messageChanKey(topic))
+			// for dapp, need to further clear notify channels
+			if client.role == Dapp {
+				channelsToClear = append(channelsToClear, dappNotifyChanKey(topic))
 			}
 		}
-		channelsToClear = append(channelsToClear, publishedChannels...)
 	}
 
 	if len(channelsToClear) > 0 {
@@ -168,7 +167,7 @@ func (ws *WsServer) handleClientDisconnect(client *client) {
 	if client.role == Dapp {
 		return
 	}
-	for _, topic := range subscribedTopics {
+	for topic := range subscribedTopics {
 		go func(topic string) {
 			key := dappNotifyChanKey(topic)
 			ws.redisConn.Publish(context.TODO(), key, SocketMessage{

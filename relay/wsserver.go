@@ -72,7 +72,7 @@ func (ws *WsServer) NewClientConn(w http.ResponseWriter, r *http.Request) {
 		ws:        ws,
 		pubTopics: NewTopicSet(),
 		subTopics: NewTopicSet(),
-		sendbuf:   make(chan SocketMessage, 256),
+		sendbuf:   make(chan SocketMessage, 8),
 		quit:      make(chan struct{}),
 	}
 
@@ -80,7 +80,6 @@ func (ws *WsServer) NewClientConn(w http.ResponseWriter, r *http.Request) {
 
 	go client.read()
 	go client.write()
-	//go client.heartbeat()
 }
 
 func (ws *WsServer) Run() {
@@ -91,9 +90,6 @@ func (ws *WsServer) Run() {
 	for {
 		select {
 		case message := <-ws.localCh:
-			if _, ok := ws.clients[message.client]; !ok {
-				metrics.IncMessageFromClosed()
-			}
 			// local message could be "pub", "sub" or "ack" or "ping"
 			// pub/sub message handler may contain time-consuming operations(e.g. read/write redis)
 			// so put them in separate goroutine to avoid blocking wsserver main loop
@@ -138,16 +134,11 @@ func (ws *WsServer) Run() {
 			//	* SessionResumed
 			// 	* relay generated fake "ack" for the wallet
 			for _, publisher := range ws.GetDappPublisher(message.Topic) {
-				log.Info("wallet updates, notify dapp", zap.Any("client", publisher), zap.Any("message", message))
-				// if SessionReceived, the message topic is the QRCode topic, use it as the session id
-				if message.Phase == string(SessionReceived) {
-					publisher.session = message.Topic
-				}
+				log.Debug("wallet updates, notify dapp", zap.Any("client", publisher), zap.Any("message", message))
 				publisher.send(message)
 			}
 
 		case client := <-ws.register:
-			log.Info("new client connection", zap.Any("client", client))
 			metrics.IncNewConnection()
 			ws.clients[client] = struct{}{}
 			metrics.SetCurrentConnections(len(ws.clients))
