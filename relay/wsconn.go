@@ -18,7 +18,7 @@ type client struct {
 
 	id        string   // randomly generate, just for logging
 	role      RoleType // dapp or wallet
-	session   string   // session id
+
 	pubTopics *TopicSet
 	subTopics *TopicSet
 

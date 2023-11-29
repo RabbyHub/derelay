@@ -82,7 +82,6 @@ func (ws *WsServer) subMessage(message SocketMessage) {
 			// messages from wallet
 
 			if noti.Phase == string(SessionRequest) { // handle the 1st case stated above
-				subscriber.session = noti.Topic
 				metrics.IncReceivedSessions()
 				//log.Info("session been scanned", zap.Any("topic", topic), zap.Any("client", subscriber))
 

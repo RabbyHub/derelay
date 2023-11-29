@@ -139,10 +139,6 @@ func (ws *WsServer) Run() {
 			// 	* relay generated fake "ack" for the wallet
 			for _, publisher := range ws.GetDappPublisher(message.Topic) {
 				log.Info("wallet updates, notify dapp", zap.Any("client", publisher), zap.Any("message", message))
-				// if SessionReceived, the message topic is the QRCode topic, use it as the session id
-				if message.Phase == string(SessionReceived) {
-					publisher.session = message.Topic
-				}
 				publisher.send(message)
 			}
 
