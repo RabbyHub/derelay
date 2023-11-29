@@ -72,7 +72,7 @@ func (ws *WsServer) NewClientConn(w http.ResponseWriter, r *http.Request) {
 		ws:        ws,
 		pubTopics: NewTopicSet(),
 		subTopics: NewTopicSet(),
-		sendbuf:   make(chan SocketMessage, 256),
+		sendbuf:   make(chan SocketMessage, 8),
 		quit:      make(chan struct{}),
 	}
 

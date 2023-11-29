@@ -144,17 +144,15 @@ func (ws *WsServer) handleClientDisconnect(client *client) {
 			channelsToClear = append(channelsToClear, messageChanKey(topic))
 		}
 	}
-
-	if client.role == Dapp {
-		// clear dapp notify channels
-		publishedChannels := []string{}
-		for topic := range client.pubTopics.Get() {
-			ws.publishers.Unset(topic, client)
-			if ws.publishers.Len(topic) == 0 {
-				publishedChannels = append(publishedChannels, dappNotifyChanKey(topic))
+	for topic := range client.pubTopics.Get() {
+		ws.publishers.Unset(topic, client)
+		if ws.publishers.Len(topic) == 0 {
+			channelsToClear = append(channelsToClear, messageChanKey(topic))
+			// for dapp, need to further clear notify channels
+			if client.role == Dapp {
+				channelsToClear = append(channelsToClear, dappNotifyChanKey(topic))
 			}
 		}
-		channelsToClear = append(channelsToClear, publishedChannels...)
 	}
 
 	if len(channelsToClear) > 0 {
