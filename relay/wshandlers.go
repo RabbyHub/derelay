@@ -141,12 +141,14 @@ func (ws *WsServer) handleClientDisconnect(client *client) {
 	for topic := range subscribedTopics {
 		ws.subscribers.Unset(topic, client)
 		if ws.subscribers.Len(topic) == 0 {
+			ws.subscribers.Clear(topic)
 			channelsToClear = append(channelsToClear, messageChanKey(topic))
 		}
 	}
 	for topic := range client.pubTopics.Get() {
 		ws.publishers.Unset(topic, client)
 		if ws.publishers.Len(topic) == 0 {
+			ws.publishers.Clear(topic)
 			channelsToClear = append(channelsToClear, messageChanKey(topic))
 			// for dapp, need to further clear notify channels
 			if client.role == Dapp {
