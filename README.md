@@ -80,7 +80,7 @@ Derelay introduced two new fields in the messages between Dapp and Wallet, the `
     "phase": "sessionSuspended",
    }
    ```
-   or
+4. or
    ```
    {
     "payload": "",
